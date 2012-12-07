@@ -160,7 +160,9 @@
 				chart.yAxis.ticks(h / 50);
 				
 				chart.width(w).height(h);
-				svg.attr('width', w).attr('height', h);
+				
+				// this -4 is a stupid hack for the browser to stop giving us scrollbars, even though w and h should be the _exact_ width and height
+				svg.attr('width', w - 4).attr('height', h - 4);
 				
 				svg.call(chart);
 			};
