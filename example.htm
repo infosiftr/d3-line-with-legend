@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>d3-line-with-legend example</title>
+		
+		<style>
+			* { -moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box; }
+			
+			html, body, #example-chart {
+				margin: 0;
+				padding: 0;
+				width: 100%;
+				height: 100%;
+			}
+			
+			/**********
+			 *  General SVG CSS
+			 */
+			
+			text {
+				font: 12px sans-serif;
+			}
+			
+			/**********
+			 *  Legend
+			 */
+			
+			.legend .series {
+				cursor: pointer;
+			}
+			
+			.legend circle {
+				stroke-width: 2px;
+			}
+			
+			.legend .disabled circle {
+				fill-opacity: 0;
+			}
+			
+			/**********
+			 *  Axes
+			 */
+			
+			.axis path {
+				fill: none;
+				stroke: #000;
+				stroke-opacity: .75;
+				shape-rendering: crispEdges;
+			}
+			
+			.axis path.domain {
+				stroke-opacity: .75;
+			}
+			
+			.axis line {
+				fill: none;
+				stroke: #000;
+				stroke-opacity: .25;
+				shape-rendering: crispEdges;
+			}
+			
+			.axis line.zero {
+				stroke-opacity: .75;
+			}
+			
+			/**********
+			 *  Line chart
+			 */
+			
+			.point-paths path {
+				stroke-opacity: 0;
+				fill-opacity: 0;
+			}
+			
+			.lines path {
+				fill: none;
+				stroke-width: 1.5px;
+				stroke-linecap: round;
+				
+				transition: stroke-width 250ms linear;
+				-moz-transition: stroke-width 250ms linear;
+				-webkit-transition: stroke-width 250ms linear;
+				
+				transition-delay: 250ms
+				-moz-transition-delay: 250ms;
+				-webkit-transition-delay: 250ms;
+			}
+			
+			.line.hover path {
+				stroke-width: 6px;
+			}
+			
+			.lines .point {
+				transition: stroke-width 250ms linear;
+				-moz-transition: stroke-width 250ms linear;
+				-webkit-transition: stroke-width 250ms linear;
+			}
+			
+			.lines .point.hover {
+				stroke-width: 20px;
+				stroke-opacity: .5;
+			}
+		</style>
+		
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+		<script src="http://mbostock.github.com/d3/d3.v2.min.js"></script>
+		
+		<script src="d3legend.js"></script>
+		<script src="d3line.js"></script>
+		<script src="d3linewithlegend.js"></script>
+	</head>
+	<body>
+		<div id="example-chart"><svg></svg></div>
+		
+		<script>
+			var chartContainer = $('#example-chart');
+			var chartSvg = chartContainer.find('svg');
+			var chartDatum = generateRandomBogusData();
+			
+			var chart = d3LineWithLegend({
+				/* d3LineWithLegend options go here */
+				xScale: d3.time.scale(),
+				color: d3.scale.category20c().range()
+			});
+			
+			chart.dispatch.on('showTooltip', function(e) {
+				var offset = chartContainer.offset(), // { left: 0, top: 0 }
+					left = e.pos[0] + offset.left,
+					top = e.pos[1] + offset.top,
+					formatter = d3.format(',r');
+				
+				/*
+				var content = $('<div>', { css: { fontWeight: 'bold' } }).text(formatter(e.point[1]) + ' ' + e.series.label).after(
+					$('<div>', { css: { fontStyle: 'italic' } }).text(d3.time.format('%B %e, %Y')(e.point[0]))
+				);
+				
+				nvtooltip.show([left, top], content);
+				*/
+			});
+			
+			chart.dispatch.on('hideTooltip', function(e) {
+				/*
+				nvtooltip.cleanup();
+				*/
+			});
+			
+			chart.xAxis.label('X Axis');
+			chart.yAxis.label('Y Axis');
+			
+			var svg = d3.selectAll(chartSvg.toArray());
+			svg.datum(chartDatum).call(chart);
+			
+			var updateGraphSize = function() {
+				var margin = chart.margin(),
+					w = calculateWidth(margin),
+					h = calculateHeight(margin);
+				
+				chart.xAxis.ticks(w / 75);
+				chart.yAxis.ticks(h / 50);
+				
+				chart.width(w - 10).height(h - 10);
+				svg.attr('width', w).attr('height', h);
+				
+				svg.call(chart);
+			};
+			
+			updateGraphSize();
+			$(window).on('resize', updateGraphSize);
+			
+			function calculateWidth(margin) {
+				var saved = svg.attr('width');
+				svg.attr('width', 0);
+				var w = chartContainer.width();
+				svg.attr('width', saved);
+				
+				return ( (w - margin.left - margin.right) < 0 )
+					? margin.left + margin.right + 2
+					: w;
+			}
+			
+			function calculateHeight(margin) {
+				var saved = svg.attr('height');
+				svg.attr('height', 0);
+				var h = chartContainer.height();
+				svg.attr('height', saved);
+				
+				return ( h - margin.top - margin.bottom < 0 )
+					? margin.top + margin.bottom + 2
+					: h;
+			}
+			
+			function generateRandomBogusData() {
+				var sin = [], sin2 = [],
+					cos = [], cos2 = [],
+					r1 = Math.random(), r2 = Math.random(),
+					r3 = Math.random(), r4 = Math.random();
+				
+				var interval = d3.time.minute;
+				var startDate = interval.round(new Date());
+				for (var i = 0; i < 100; i++) {
+					var dateTime = interval.offset(startDate, i);
+					sin.push([ dateTime, r1 * Math.sin( r2 +  i / (10 * (r4 + .5) )) ]);
+					cos.push([ dateTime, r2 * Math.cos( r3 + i / (10 * (r3 + .5) )) ]);
+					sin2.push([ dateTime, r3 * Math.sin( r1 + i / (10 * (r2 + .5) )) ]);
+					cos2.push([ dateTime, r4 * Math.cos( r4 + i / (10 * (r1 + .5) )) ]);
+				}
+				
+				return [
+					{
+						data: sin,
+						label: 'Sine Wave'
+					},
+					{
+						data: cos,
+						label: 'Cosine Wave'
+					},
+					{
+						data: sin2,
+						label: 'Sine2 Wave'
+					},
+					{
+						data: cos2,
+						label: 'Cosine2 Wave'
+					}
+				];
+			}
+		</script>
+	</body>
+</html>
